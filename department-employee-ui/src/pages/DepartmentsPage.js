@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import {
@@ -18,9 +19,9 @@ export default function DepartmentsPage() {
   const [departments, setDepartments] = useState([]);
   const [editing, setEditing] = useState(false);
   const [initial, setInitial] = useState({
-    departmentId: 0,
-    departmentName: '',
-    departmentCode: ''
+    DepartmentId: 0,
+    DepartmentName: '',
+    DepartmentCode: ''
   });
 
   useEffect(() => {
@@ -30,7 +31,9 @@ export default function DepartmentsPage() {
   const loadDepartments = async () => {
     try {
       const res = await api.get('/departments');
+      // normalize keys if needed
       setDepartments(res.data);
+      console.log("Departments loaded:", res.data);
     } catch (err) {
       console.error('Error loading departments:', err);
       alert(err.response?.data || err.message);
@@ -44,24 +47,24 @@ export default function DepartmentsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!initial.departmentName || !initial.departmentCode) {
+    if (!initial.DepartmentName || !initial.DepartmentCode) {
       return alert('Both fields are required');
     }
 
     const payload = {
-      departmentName: initial.departmentName.trim(),
-      departmentCode: initial.departmentCode.trim()
+      DepartmentName: initial.DepartmentName.trim(),
+      DepartmentCode: initial.DepartmentCode.trim()
     };
 
     try {
       if (editing) {
-        await api.put(`/departments/${initial.departmentId}`, payload);
+        await api.put(`/departments/${initial.DepartmentId}`, payload);
         setEditing(false);
       } else {
         await api.post('/departments', payload);
       }
 
-      setInitial({ departmentId: 0, departmentName: '', departmentCode: '' });
+      setInitial({ DepartmentId: 0, DepartmentName: '', DepartmentCode: '' });
       loadDepartments();
     } catch (err) {
       console.error('Submit error:', err);
@@ -71,9 +74,9 @@ export default function DepartmentsPage() {
 
   const startEdit = (dept) => {
     setInitial({
-      departmentId: dept.departmentId,
-      departmentName: dept.departmentName,
-      departmentCode: dept.departmentCode
+      DepartmentId: dept.DepartmentId,
+      DepartmentName: dept.DepartmentName,
+      DepartmentCode: dept.DepartmentCode
     });
     setEditing(true);
     window.scrollTo(0, 0);
@@ -101,14 +104,14 @@ export default function DepartmentsPage() {
         <form onSubmit={handleSubmit}>
           <TextField
             label="Department Name"
-            value={initial.departmentName}
-            onChange={(e) => handleChange('departmentName', e.target.value)}
+            value={initial.DepartmentName}
+            onChange={(e) => handleChange('DepartmentName', e.target.value)}
             fullWidth margin="normal" required
           />
           <TextField
             label="Department Code"
-            value={initial.departmentCode}
-            onChange={(e) => handleChange('departmentCode', e.target.value)}
+            value={initial.DepartmentCode}
+            onChange={(e) => handleChange('DepartmentCode', e.target.value)}
             fullWidth margin="normal" required
           />
 
@@ -122,7 +125,7 @@ export default function DepartmentsPage() {
                 color="secondary"
                 onClick={() => {
                   setEditing(false);
-                  setInitial({ departmentId: 0, departmentName: '', departmentCode: '' });
+                  setInitial({ DepartmentId: 0, DepartmentName: '', DepartmentCode: '' });
                 }}
               >
                 Cancel
@@ -143,26 +146,35 @@ export default function DepartmentsPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {departments.map((dept) => (
-              <TableRow key={dept.departmentId}>
-                <TableCell>{dept.departmentName}</TableCell>
-                <TableCell>{dept.departmentCode}</TableCell>
-                <TableCell align="right">
-                  <Button size="small" onClick={() => startEdit(dept)}>Edit</Button>
-                  <Button
-                    size="small"
-                    color="error"
-                    sx={{ ml: 1 }}
-                    onClick={() => handleDelete(dept.departmentId)}
-                  >
-                    Delete
-                  </Button>
+            {departments.length > 0 ? (
+              departments.map((dept) => (
+                <TableRow key={dept.DepartmentId}>
+                  <TableCell>{dept.DepartmentName}</TableCell>
+                  <TableCell>{dept.DepartmentCode}</TableCell>
+                  <TableCell align="right">
+                    <Button size="small" onClick={() => startEdit(dept)}>Edit</Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      sx={{ ml: 1 }}
+                      onClick={() => handleDelete(dept.DepartmentId)}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} align="center">
+                  No departments found
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </Paper>
     </Container>
   );
 }
+

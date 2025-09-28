@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import {
@@ -34,16 +35,15 @@ export default function EmployeesPage() {
   const [departments, setDepartments] = useState([]);
   const [editing, setEditing] = useState(false);
   const [initial, setInitial] = useState({
-    EmployeeId: 0,
-    FirstName: '',
-    LastName: '',
-    Email: '',
-    DOB: '',
-    Salary: '',
-    DepartmentId: ''
+    employeeId: 0,
+    firstName: '',
+    lastName: '',
+    email: '',
+    dob: '',
+    salary: '',
+    departmentId: ''
   });
 
-  // Form errors state for each field
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -56,8 +56,29 @@ export default function EmployeesPage() {
         api.get('/employees'),
         api.get('/departments')
       ]);
-      setEmployees(empRes.data);
-      setDepartments(deptRes.data);
+
+      // Normalize departments to camelCase
+      const deptData = deptRes.data.map(d => ({
+        departmentId: d.DepartmentId,
+        departmentName: d.DepartmentName,
+        departmentCode: d.DepartmentCode
+      }));
+      setDepartments(deptData);
+
+      // Normalize employees to camelCase
+      const empData = empRes.data.map(e => ({
+        employeeId: e.EmployeeId,
+        firstName: e.FirstName,
+        lastName: e.LastName,
+        email: e.Email,
+        dob: e.DOB,
+        salary: e.Salary,
+        departmentId: e.DepartmentId,
+        departmentName: e.DepartmentName || null,
+        departmentCode: e.DepartmentCode || null
+      }));
+      setEmployees(empData);
+
     } catch (err) {
       console.error('Error loading data:', err);
       alert(err.response?.data || err.message);
@@ -66,63 +87,61 @@ export default function EmployeesPage() {
 
   const handleChange = (field, value) => {
     setInitial((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined })); // clear error on change
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const validate = () => {
     let tempErrors = {};
 
-    if (!initial.FirstName.trim()) tempErrors.FirstName = 'First name is required';
-    if (!initial.LastName.trim()) tempErrors.LastName = 'Last name is required';
+    if (!initial.firstName.trim()) tempErrors.firstName = 'First name is required';
+    if (!initial.lastName.trim()) tempErrors.lastName = 'Last name is required';
 
-    if (!initial.Email.trim()) tempErrors.Email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(initial.Email))
-      tempErrors.Email = 'Email is invalid';
+    if (!initial.email.trim()) tempErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(initial.email))
+      tempErrors.email = 'Email is invalid';
 
-    if (!initial.DOB) tempErrors.DOB = 'Date of Birth is required';
-    else if (isNaN(new Date(initial.DOB).getTime()))
-      tempErrors.DOB = 'Invalid Date of Birth';
+    if (!initial.dob) tempErrors.dob = 'Date of Birth is required';
+    else if (isNaN(new Date(initial.dob).getTime()))
+      tempErrors.dob = 'Invalid Date of Birth';
 
-    if (!initial.Salary) tempErrors.Salary = 'Salary is required';
-    else if (isNaN(parseFloat(initial.Salary)) || parseFloat(initial.Salary) <= 0)
-      tempErrors.Salary = 'Salary must be a positive number';
+    if (!initial.salary) tempErrors.salary = 'Salary is required';
+    else if (isNaN(parseFloat(initial.salary)) || parseFloat(initial.salary) <= 0)
+      tempErrors.salary = 'Salary must be a positive number';
 
-    if (!initial.DepartmentId) tempErrors.DepartmentId = 'Please select a Department';
+    if (!initial.departmentId) tempErrors.departmentId = 'Please select a Department';
 
     setErrors(tempErrors);
-
     return Object.keys(tempErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validate()) return;
 
     const payload = {
-      FirstName: initial.FirstName.trim(),
-      LastName: initial.LastName.trim(),
-      Email: initial.Email.trim(),
-      DOB: new Date(initial.DOB).toISOString().split('T')[0],
-      Salary: parseFloat(initial.Salary),
-      DepartmentId: Number(initial.DepartmentId)
+      FirstName: initial.firstName.trim(),
+      LastName: initial.lastName.trim(),
+      Email: initial.email.trim(),
+      DOB: new Date(initial.dob).toISOString().split('T')[0],
+      Salary: parseFloat(initial.salary),
+      DepartmentId: Number(initial.departmentId)
     };
 
     try {
       if (editing) {
-        await api.put(`/employees/${initial.EmployeeId}`, payload);
+        await api.put(`/employees/${initial.employeeId}`, payload);
         setEditing(false);
       } else {
         await api.post('/employees', payload);
       }
       setInitial({
-        EmployeeId: 0,
-        FirstName: '',
-        LastName: '',
-        Email: '',
-        DOB: '',
-        Salary: '',
-        DepartmentId: ''
+        employeeId: 0,
+        firstName: '',
+        lastName: '',
+        email: '',
+        dob: '',
+        salary: '',
+        departmentId: ''
       });
       loadData();
     } catch (err) {
@@ -133,13 +152,13 @@ export default function EmployeesPage() {
 
   const startEdit = (emp) => {
     setInitial({
-      EmployeeId: emp.EmployeeId,
-      FirstName: emp.FirstName,
-      LastName: emp.LastName,
-      Email: emp.Email,
-      DOB: emp.DOB.split('T')[0],
-      Salary: emp.Salary,
-      DepartmentId: emp.DepartmentId
+      employeeId: emp.employeeId,
+      firstName: emp.firstName,
+      lastName: emp.lastName,
+      email: emp.email,
+      dob: emp.dob.split('T')[0],
+      salary: emp.salary,
+      departmentId: emp.departmentId
     });
     setErrors({});
     setEditing(true);
@@ -174,76 +193,70 @@ export default function EmployeesPage() {
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="First Name"
-                  value={initial.FirstName}
-                  onChange={(e) => handleChange('FirstName', e.target.value)}
+                  value={initial.firstName}
+                  onChange={(e) => handleChange('firstName', e.target.value)}
                   fullWidth
                   required
-                  variant="outlined"
-                  error={!!errors.FirstName}
-                  helperText={errors.FirstName}
+                  error={!!errors.firstName}
+                  helperText={errors.firstName}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Last Name"
-                  value={initial.LastName}
-                  onChange={(e) => handleChange('LastName', e.target.value)}
+                  value={initial.lastName}
+                  onChange={(e) => handleChange('lastName', e.target.value)}
                   fullWidth
                   required
-                  variant="outlined"
-                  error={!!errors.LastName}
-                  helperText={errors.LastName}
+                  error={!!errors.lastName}
+                  helperText={errors.lastName}
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
                   label="Email"
                   type="email"
-                  value={initial.Email}
-                  onChange={(e) => handleChange('Email', e.target.value)}
+                  value={initial.email}
+                  onChange={(e) => handleChange('email', e.target.value)}
                   fullWidth
                   required
-                  variant="outlined"
-                  error={!!errors.Email}
-                  helperText={errors.Email}
+                  error={!!errors.email}
+                  helperText={errors.email}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Date of Birth"
                   type="date"
-                  value={initial.DOB}
-                  onChange={(e) => handleChange('DOB', e.target.value)}
+                  value={initial.dob}
+                  onChange={(e) => handleChange('dob', e.target.value)}
                   fullWidth
                   required
                   InputLabelProps={{ shrink: true }}
-                  variant="outlined"
-                  error={!!errors.DOB}
-                  helperText={errors.DOB}
+                  error={!!errors.dob}
+                  helperText={errors.dob}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Salary"
                   type="number"
-                  value={initial.Salary}
-                  onChange={(e) => handleChange('Salary', e.target.value)}
+                  value={initial.salary}
+                  onChange={(e) => handleChange('salary', e.target.value)}
                   fullWidth
                   required
-                  variant="outlined"
                   inputProps={{ min: 0, step: 0.01 }}
-                  error={!!errors.Salary}
-                  helperText={errors.Salary}
+                  error={!!errors.salary}
+                  helperText={errors.salary}
                 />
               </Grid>
               <Grid item xs={12}>
-                <FormControl fullWidth required variant="outlined" sx={{ minWidth: 240 }} error={!!errors.DepartmentId}>
+                <FormControl fullWidth required error={!!errors.departmentId}>
                   <InputLabel id="department-label">Department</InputLabel>
                   <Select
                     labelId="department-label"
-                    id="department-select"
-                    value={initial.DepartmentId || ''}
-                    onChange={(e) => handleChange('DepartmentId', e.target.value)}
+                    value={initial.departmentId || ''}
+                    onChange={(e) => handleChange('departmentId', e.target.value)}
                     input={<OutlinedInput label="Department" />}
                   >
                     <MenuItem value="">-- Select Department --</MenuItem>
@@ -253,7 +266,7 @@ export default function EmployeesPage() {
                       </MenuItem>
                     ))}
                   </Select>
-                  {!!errors.DepartmentId && <FormHelperText>{errors.DepartmentId}</FormHelperText>}
+                  {!!errors.departmentId && <FormHelperText>{errors.departmentId}</FormHelperText>}
                 </FormControl>
               </Grid>
             </Grid>
@@ -269,13 +282,13 @@ export default function EmployeesPage() {
                   onClick={() => {
                     setEditing(false);
                     setInitial({
-                      EmployeeId: 0,
-                      FirstName: '',
-                      LastName: '',
-                      Email: '',
-                      DOB: '',
-                      Salary: '',
-                      DepartmentId: ''
+                      employeeId: 0,
+                      firstName: '',
+                      lastName: '',
+                      email: '',
+                      dob: '',
+                      salary: '',
+                      departmentId: ''
                     });
                     setErrors({});
                   }}
@@ -305,31 +318,32 @@ export default function EmployeesPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {employees.map((emp) => (
-                  <TableRow
-                    key={emp.EmployeeId}
-                    hover
-                    sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}
-                  >
-                    <TableCell>{emp.FirstName} {emp.LastName}</TableCell>
-                    <TableCell>{emp.Email}</TableCell>
-                    <TableCell>{new Date(emp.DOB).toLocaleDateString()}</TableCell>
-                    <TableCell>{calculateAge(emp.DOB)}</TableCell>
-                    <TableCell>{emp.Salary}</TableCell>
-                    <TableCell>{emp.DepartmentName} ({emp.DepartmentCode})</TableCell>
-                    <TableCell align="center">
-                      <Button size="small" onClick={() => startEdit(emp)}>Edit</Button>
-                      <Button
-                        size="small"
-                        color="error"
-                        sx={{ ml: 1 }}
-                        onClick={() => handleDelete(emp.EmployeeId)}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {employees.map((emp) => {
+                  const dept = departments.find(d => d.departmentId === emp.departmentId);
+                  return (
+                    <TableRow key={emp.employeeId} hover>
+                      <TableCell>{emp.firstName} {emp.lastName}</TableCell>
+                      <TableCell>{emp.email}</TableCell>
+                      <TableCell>{new Date(emp.dob).toLocaleDateString()}</TableCell>
+                      <TableCell>{calculateAge(emp.dob)}</TableCell>
+                      <TableCell>{emp.salary}</TableCell>
+                      <TableCell>
+                        {dept ? `${dept.departmentName} (${dept.departmentCode})` : '—'}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Button size="small" onClick={() => startEdit(emp)}>Edit</Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          sx={{ ml: 1 }}
+                          onClick={() => handleDelete(emp.employeeId)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -338,3 +352,4 @@ export default function EmployeesPage() {
     </Box>
   );
 }
+
