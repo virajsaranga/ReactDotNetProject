@@ -7,9 +7,9 @@ namespace DepartmentEmployeeAPI.Models
         public int DepartmentId { get; set; }
 
         [Required]
-        public string DepartmentCode { get; set; } = null!;  // ✅ must exist
+        public string DepartmentCode { get; set; } = null!;  
 
         [Required]
-        public string DepartmentName { get; set; } = null!;  // ✅ must exist
+        public string DepartmentName { get; set; } = null!;  
     }
 }
